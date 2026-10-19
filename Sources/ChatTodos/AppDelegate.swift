@@ -48,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shiftMonitor.onLeftDouble = { [weak self] in self?.captureSelection() }
         shiftMonitor.onRightDouble = { [weak self] in self?.togglePanel(focusComposer: true) }
         startShiftMonitor()
+        SelectionCapture.clipboard.start()
 
         #if DEBUG
         scheduleDebugSnapshots()
@@ -186,7 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in
             let text = await SelectionCapture.capture()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             guard !text.isEmpty else {
-                toast.show(title: "Nothing selected", subtitle: "Select some text, then tap ⇧ twice.", success: false)
+                toast.show(title: "Nothing selected", subtitle: "Select or copy some text, then tap ⇧ twice.", success: false)
                 return
             }
             store.capture(text, source: source)
@@ -312,7 +313,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func scheduleDebugSnapshots() {
         guard let prefix = ProcessInfo.processInfo.environment["CHAT_TODOS_SNAPSHOT"] else { return }
         let steps: [(String, () -> Void)] = [
-            ("list", { [self] in showPanel(); store.moveCursor(1); store.moveCursor(1) }),
+            ("list", { [self] in
+                showPanel()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
+                    store.onBlur()
+                    store.moveCursor(1)
+                    store.moveCursor(1)
+                }
+            }),
             ("help", { [self] in store.showHelp = true }),
             ("switcher", { [self] in store.showHelp = false; store.openSwitcher(); store.switcherQuery = "Re" }),
             ("compose", { [self] in

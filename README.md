@@ -7,6 +7,7 @@ Inspired by [Copper](https://shadcn.com/copper) by shadcn. This is an independen
 ## How it works
 
 1. **Capture** – select text in any app and tap **Left Shift twice**. It's saved to the active section and a small "Saved" toast confirms it. You never leave the app you're in.
+   Apps that keep their own selection and copy it on mouse release work too, such as Claude Code's fullscreen TUI. If there's no native selection, Chat Todos saves what that same app copied in the last 30 seconds (once).
 2. **Queue** – tap **Right Shift twice** (or **⌘⇧Space**) to open the panel and type a prompt you want to try next.
 3. **Use** – select an item, **⌘C**, paste it into your AI tool, and press **Space** to check it off. **⌘↩** does both at once.
 4. **Organize** – type `# Name` in the composer to start (or switch to) a section. New captures go there until you switch with **⌘K**.
@@ -53,7 +54,9 @@ scripts/build.sh
 
 On first launch macOS asks for **Accessibility** access (System Settings → Privacy & Security → Accessibility). It's needed to see the double-Shift taps and read your text selection. Until it's granted, the panel shows a banner and ⌘⇧Space still works.
 
-> The default build is ad-hoc signed, so macOS treats every rebuild as a new app and you'll have to re-enable Accessibility after rebuilding (toggle it off/on, or remove and re-add it). Set `SIGN_IDENTITY="Apple Development: …"` when running the scripts to keep the grant across builds.
+> Run `scripts/create-signing-cert.sh` once before building. It creates a local self-signed code-signing certificate that the build uses automatically. Without it the app is ad-hoc signed, macOS treats every rebuild as a new app, and the Accessibility switch silently stops applying (it still looks on). You can also set `SIGN_IDENTITY="Apple Development: …"` to use a real certificate.
+>
+> If the panel says Accessibility is off while the switch is on, remove Chat Todos from the list with **−**, then add it again.
 
 Enable **Launch at Login** from the menu-bar icon's right-click menu.
 

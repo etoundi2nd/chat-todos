@@ -134,9 +134,14 @@ struct PermissionBanner: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "hand.raised.fill").foregroundStyle(.orange)
-            Text("Allow Accessibility access to capture with ⇧⇧ from any app.")
-                .font(.system(size: 11.5))
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Allow Accessibility access to capture with ⇧⇧ from any app.")
+                    .font(.system(size: 11.5))
+                Text("Already on? Remove Chat Todos with − and add it again.")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
             Button("Open Settings") {
                 if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
@@ -411,12 +416,8 @@ struct ItemRow: View {
                     .lineLimit(2)
                     .truncationMode(.middle)
             case .note, .prompt:
-                Text(Self.render(item.text))
+                MarkdownText(text: item.text, done: item.done, collapsed: !selected)
                     .font(.system(size: 13))
-                    .foregroundStyle(item.done ? .secondary : .primary)
-                    .strikethrough(item.done)
-                    .lineLimit(selected ? nil : 8)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -496,11 +497,6 @@ struct ItemRow: View {
         case .image: "photo"
         case .file: "doc"
         }
-    }
-
-    static func render(_ text: String) -> AttributedString {
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
     }
 }
 
