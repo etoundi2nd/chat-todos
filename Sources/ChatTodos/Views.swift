@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct RootView: View {
     @ObservedObject var store: Store
+    @ObservedObject var settings: AppSettings
     @State private var dropTargeted = false
 
     var body: some View {
@@ -45,6 +46,7 @@ struct RootView: View {
                     .allowsHitTesting(false)
             }
         }
+        .environment(\.typography, settings.typography)
         .onDrop(of: [.fileURL, .image, .plainText], isTargeted: $dropTargeted) { providers in
             store.handleDrop(providers)
             return true
@@ -113,6 +115,7 @@ struct HeaderView: View {
                 Button("Export as Markdown…") { store.exportMarkdown() }
                 Button("Show Data in Finder") { store.revealData() }
                 Divider()
+                Button("Settings…  ⌘,") { store.onOpenSettings() }
                 Button("Keyboard Shortcuts  ⌘/") { store.showHelp = true }
                 Button("Hide Panel  esc") { store.onHide() }
                 Button("Quit Chat Todos") { NSApp.terminate(nil) }
@@ -280,6 +283,7 @@ struct HintRow: View {
 }
 
 struct SectionHeaderView: View {
+    @Environment(\.typography) private var typography
     @ObservedObject var store: Store
     let group: Store.Group
     let collapsed: Bool
@@ -290,12 +294,12 @@ struct SectionHeaderView: View {
         let open = group.items.filter { !$0.done }.count
         HStack(spacing: 6) {
             Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .bold))
+                .font(typography.ui(9, weight: .bold))
                 .rotationEffect(.degrees(collapsed ? 0 : 90))
                 .foregroundStyle(.tertiary)
                 .frame(width: 10)
             Text(section.name)
-                .font(.system(size: 11, weight: .semibold))
+                .font(typography.ui(11, weight: .semibold))
                 .textCase(.uppercase)
                 .foregroundStyle(active ? .primary : .secondary)
             if active {
@@ -303,7 +307,7 @@ struct SectionHeaderView: View {
             }
             if !group.items.isEmpty {
                 Text("\(open)/\(group.items.count)")
-                    .font(.system(size: 10.5).monospacedDigit())
+                    .font(typography.ui(10.5).monospacedDigit())
                     .foregroundStyle(.tertiary)
             }
             Spacer()
@@ -324,6 +328,7 @@ struct SectionHeaderView: View {
 }
 
 struct ItemRow: View {
+    @Environment(\.typography) private var typography
     @ObservedObject var store: Store
     let item: Item
     @State private var hovering = false
@@ -337,7 +342,7 @@ struct ItemRow: View {
         HStack(alignment: .top, spacing: 9) {
             Button { store.toggleDone([item.id]) } label: {
                 Image(systemName: item.done ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 15))
+                    .font(typography.ui(15))
                     .foregroundStyle(item.done ? Color.accentColor : Color.secondary.opacity(0.7))
             }
             .buttonStyle(.plain)
@@ -351,7 +356,7 @@ struct ItemRow: View {
 
             if hovering && !editing {
                 Button { store.copy([item.id]) } label: {
-                    Image(systemName: "doc.on.doc").font(.system(size: 11.5))
+                    Image(systemName: "doc.on.doc").font(typography.ui(11.5))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
@@ -381,7 +386,7 @@ struct ItemRow: View {
         if editing {
             TextField("", text: $editText, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(typography.text())
                 .focused($editFocused)
                 .onAppear {
                     editText = item.text
@@ -402,22 +407,22 @@ struct ItemRow: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         .opacity(item.done ? 0.5 : 1)
                 } else {
-                    Label("Missing image", systemImage: "photo").foregroundStyle(.secondary).font(.system(size: 13))
+                    Label("Missing image", systemImage: "photo").foregroundStyle(.secondary).font(typography.text())
                 }
             case .file:
                 Label(URL(fileURLWithPath: item.text).lastPathComponent, systemImage: "doc")
-                    .font(.system(size: 13))
+                    .font(typography.text())
                     .strikethrough(item.done)
             case .link:
                 Text(item.text)
-                    .font(.system(size: 13))
+                    .font(typography.text())
                     .foregroundStyle(item.done ? Color.secondary : Color.accentColor)
                     .strikethrough(item.done)
                     .lineLimit(2)
                     .truncationMode(.middle)
             case .note, .prompt:
                 MarkdownText(text: item.text, done: item.done, collapsed: !selected)
-                    .font(.system(size: 13))
+                    .font(typography.text())
             }
         }
     }
@@ -435,7 +440,7 @@ struct ItemRow: View {
                 Text(item.createdAt, format: .relative(presentation: .numeric, unitsStyle: .abbreviated))
             }
         }
-        .font(.system(size: 10.5))
+        .font(typography.ui(10.5))
         .foregroundStyle(.tertiary)
         .lineLimit(1)
     }
@@ -503,6 +508,7 @@ struct ItemRow: View {
 // MARK: - Composer
 
 struct ComposerView: View {
+    @Environment(\.typography) private var typography
     @ObservedObject var store: Store
     @FocusState private var focused: Bool
 
@@ -514,7 +520,7 @@ struct ComposerView: View {
             HStack(alignment: .bottom, spacing: 8) {
                 TextField("Queue a prompt, jot a note…", text: $store.draft, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(typography.text())
                     .lineLimit(1...8)
                     .focused($focused)
                     .onSubmit {

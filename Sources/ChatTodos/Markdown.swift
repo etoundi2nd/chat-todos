@@ -195,6 +195,7 @@ enum MarkdownParser {
 
 /// Renders Markdown blocks. `collapsed` cuts long content to roughly `lineBudget` lines.
 struct MarkdownText: View {
+    @Environment(\.typography) private var typography
     let text: String
     var done = false
     var collapsed = false
@@ -245,7 +246,7 @@ struct MarkdownText: View {
             inline(t)
         case .heading(let level, let t):
             inline(t)
-                .font(.system(size: level == 1 ? 16 : level == 2 ? 14.5 : 13.5, weight: .semibold))
+                .font(typography.text(level == 1 ? 3 : level == 2 ? 1.5 : 0.5, weight: .semibold))
                 .padding(.top, 2)
         case .listItem(let level, let marker, let t):
             HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -255,7 +256,7 @@ struct MarkdownText: View {
             .padding(.leading, CGFloat(level) * 16)
         case .code(let t):
             Text(t)
-                .font(.system(size: 12, design: .monospaced))
+                .font(typography.code())
                 .strikethrough(done)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 8)
@@ -278,7 +279,7 @@ struct MarkdownText: View {
                     GridRow { ForEach(Array(row.enumerated()), id: \.offset) { _, c in inline(c) } }
                 }
             }
-            .font(.system(size: 12))
+            .font(typography.text(-1))
         }
     }
 
@@ -289,18 +290,24 @@ struct MarkdownText: View {
         case .ordered(let label):
             Text(label).monospacedDigit().foregroundStyle(.secondary)
         case .task(let checked):
-            Image(systemName: checked ? "checkmark.square" : "square").foregroundStyle(.secondary).font(.system(size: 11))
+            Image(systemName: checked ? "checkmark.square" : "square").foregroundStyle(.secondary).font(typography.ui(11))
         }
     }
 
     private func inline(_ text: String) -> some View {
-        Text(Self.inlineAttributed(text))
+        Text(Self.inlineAttributed(text, codeFont: typography.code()))
             .strikethrough(done)
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    static func inlineAttributed(_ text: String) -> AttributedString {
+    static func inlineAttributed(_ text: String, codeFont: Font? = nil) -> AttributedString {
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+        guard var attributed = try? AttributedString(markdown: text, options: options) else { return AttributedString(text) }
+        if let codeFont {
+            for run in attributed.runs where run.inlinePresentationIntent?.contains(.code) == true {
+                attributed[run.range].font = codeFont
+            }
+        }
+        return attributed
     }
 }

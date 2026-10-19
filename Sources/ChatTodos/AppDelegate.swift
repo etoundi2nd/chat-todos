@@ -18,6 +18,8 @@ enum ChatTodosMain {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = Store()
+    let settings = AppSettings()
+    private lazy var settingsWindow = SettingsWindowController(settings: settings)
     private let panel = FloatingPanel()
     private let toast = ToastController()
     private let shiftMonitor = ShiftTapMonitor()
@@ -76,7 +78,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let main = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Hide Panel", action: #selector(hidePanelAction), keyEquivalent: "w").target = self
+        appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
+        appMenu.addItem(withTitle: "Close", action: #selector(hidePanelAction), keyEquivalent: "w").target = self
         appMenu.addItem(withTitle: "Quit Chat Todos", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         main.addItem(appItem)
@@ -98,7 +101,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setUpPanel() {
         store.onHide = { [weak self] in self?.hidePanel() }
         store.onBlur = { [weak self] in _ = self?.panel.makeFirstResponder(nil) }
-        panel.contentView = NSHostingView(rootView: RootView(store: store))
+        store.onOpenSettings = { [weak self] in self?.showSettings() }
+        panel.contentView = NSHostingView(rootView: RootView(store: store, settings: settings))
         if !panel.setFrameUsingName("ChatTodosPanel"), let screen = NSScreen.main {
             let frame = screen.visibleFrame
             let height = min(680, frame.height - 40)
@@ -176,7 +180,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc private func hidePanelAction() { hidePanel() }
+    @objc private func hidePanelAction() {
+        if settingsWindow.isKey { settingsWindow.close() } else { hidePanel() }
+    }
+
+    @objc func showSettings() { settingsWindow.show() }
 
     // MARK: - Capture
 
@@ -321,7 +329,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     store.moveCursor(1)
                 }
             }),
-            ("help", { [self] in store.showHelp = true }),
+            ("settings", { [self] in showSettings() }),
+            ("help", { [self] in settingsWindow.close(); panel.makeKey(); store.showHelp = true }),
             ("switcher", { [self] in store.showHelp = false; store.openSwitcher(); store.switcherQuery = "Re" }),
             ("compose", { [self] in
                 store.showSwitcher = false
@@ -350,7 +359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 + Double(index) * 1.2) { [self] in
                 step.1()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [self] in
-                    guard let view = panel.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+                    guard let view = NSApp.keyWindow?.contentView ?? panel.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
                     view.cacheDisplay(in: view.bounds, to: rep)
                     try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(prefix)-\(step.0).png"))
                 }
@@ -386,6 +395,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(withTitle: "Grant Accessibility Access…", action: #selector(openAccessibilitySettings), keyEquivalent: "").target = self
         }
         menu.addItem(withTitle: "Export as Markdown…", action: #selector(menuExport), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
         menu.addItem(withTitle: "Show Data in Finder", action: #selector(menuReveal), keyEquivalent: "").target = self
 
         let login = menu.addItem(withTitle: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")

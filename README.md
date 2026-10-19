@@ -35,6 +35,9 @@ Everything stays on your Mac in one JSON file. No account, no sync, no telemetry
 | Panel | Tab or just type | Jump to the composer |
 | Panel | Esc | Hide and return focus to the previous app |
 | Panel | ⌘/ | Shortcut sheet |
+| Panel | ⌘, | Settings |
+
+**Settings** (⌘, or the ⋯ / menu-bar menus) let you pick the text font (System, Rounded, Serif, Monospaced, or any installed family), the text size (11–20 pt), and the code font, with a live preview.
 
 Right-click a section header to rename, clear completed, or delete it. Click a color dot in the header to filter by tag.
 

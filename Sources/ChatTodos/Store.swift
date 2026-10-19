@@ -42,6 +42,7 @@ final class Store: ObservableObject {
     /// Set by the app delegate.
     var onHide: () -> Void = {}
     var onBlur: () -> Void = {}
+    var onOpenSettings: () -> Void = {}
 
     let directory: URL
     var dataURL: URL { directory.appendingPathComponent("chat-todos.json") }
